@@ -58,7 +58,7 @@ type game struct {
 	turn   int
 }
 
-func (g *game) playGame() int {
+func (g *game) mainLoop() int {
 	// g.draw()
 	winner := -1
 	for !g.isDone {
@@ -181,5 +181,5 @@ func playGame(c chan int) {
 	}
 	g.p1 = newRandomPlayer('X', g.b)
 	g.p2 = newRandomPlayer('O', g.b)
-	c <- g.playGame()
+	c <- g.mainLoop()
 }
