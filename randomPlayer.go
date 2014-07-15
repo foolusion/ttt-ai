@@ -19,6 +19,9 @@ func newRandomPlayer(char byte, b *board) *randomPlayer {
 
 func (r *randomPlayer) Input() (int, int, error) {
 	a := getAvailableSpots(r.b)
+	if len(a) <= 1 {
+		return a[0] / 3, a[0] % 3, nil
+	}
 	i := r.rn.Intn(len(a))
 	return a[i] / 3, a[i] % 3, nil
 }

@@ -55,55 +55,57 @@ type game struct {
 	b      *board
 	p1, p2 player
 	isDone bool
-	turn   int
+	turn   player
 }
 
-func (g *game) mainLoop() int {
-	// g.draw()
-	winner := -1
+func (g *game) mainLoop() byte {
+	//g.draw()
+	var winner byte = 0
 	for !g.isDone {
-		if err := g.tick(); err != nil {
-			panic(err)
-		}
-		// g.draw()
 		isDone, char := g.b.checkDone()
 		if isDone {
 			switch char {
 			case g.p1.Char():
-				winner = 1
+				winner = g.p1.Char()
 			case g.p2.Char():
-				winner = 2
+				winner = g.p2.Char()
 			default:
-				winner = 0
+				winner = 'T'
 			}
 			g.isDone = isDone
+			continue
 		}
+		if err := g.tick(); err != nil {
+			panic(err)
+		}
+	//	g.draw()
 	}
 	return winner
 }
 
 func (g *game) tick() error {
-	switch g.turn {
-	case 1:
-		doInput(g.p1, g.b)
-		g.turn = 2
-	case 2:
-		doInput(g.p2, g.b)
-		g.turn = 1
-	default:
-		return errBadTurn(g.turn)
+	if g.turn != g.p1 && g.turn != g.p2 {
+		return errBadTurn(g.turn.Char())
+	}
+	doInput(g.turn, g.b)
+	if g.turn == g.p1 {
+		g.turn = g.p2
+	} else {
+		g.turn = g.p1
 	}
 	return nil
 }
 
-// func (g *game) draw() {
-// 	fmt.Println(g.b.spots[0:3])
-// 	fmt.Println(g.b.spots[3:6])
-// 	fmt.Println(g.b.spots[6:9])
-// 	fmt.Println("Player ", g.turn, "'s turn.")
-// }
+/*
+func (g *game) draw() {
+	fmt.Println(g.b.spots[0:3])
+	fmt.Println(g.b.spots[3:6])
+	fmt.Println(g.b.spots[6:9])
+	fmt.Println("Player ", g.turn, "'s turn.")
+}
+*/
 
-type errBadTurn int
+type errBadTurn byte
 
 func (e errBadTurn) Error() string {
 	return fmt.Sprintf("%v: %v", e, "Not a valid turn value")
@@ -154,7 +156,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	c := make(chan int)
+	c := make(chan byte)
 
 	for i := 0; i < numGames; i++ {
 		go playGame(c)
@@ -162,24 +164,24 @@ func main() {
 	s := struct{ tie, p1, p2 int }{0, 0, 0}
 	for i := 0; i < numGames; i++ {
 		switch <-c {
-		case 0:
+		case 'T':
 			s.tie++
-		case 1:
+		case 'X':
 			s.p1++
-		case 2:
+		case 'O':
 			s.p2++
 		}
 	}
 	fmt.Println(s.tie, s.p1, s.p2)
 }
 
-func playGame(c chan int) {
+func playGame(c chan byte) {
 	g := &game{
 		b:      &board{},
 		isDone: false,
-		turn:   1,
 	}
 	g.p1 = newRandomPlayer('X', g.b)
-	g.p2 = newRandomPlayer('O', g.b)
+	g.p2 = newMctsPlayer('O', g.b)
+	g.turn = g.p1
 	c <- g.mainLoop()
 }
