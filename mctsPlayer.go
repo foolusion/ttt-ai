@@ -1,8 +1,10 @@
 package main
 
-import "math"
-import "math/rand"
-import "time"
+import (
+	"math"
+	"math/rand"
+	"time"
+)
 
 type mctsTree struct {
 	root *mctsNode
@@ -57,7 +59,9 @@ func (m *mctsPlayer) selectNode(n *mctsNode) *mctsNode {
 	var next *mctsNode // next node to select value
 	var max float64 = 0.0
 	for i, v := range n.children {
-		temp := (float64(v.wins) / float64(v.simulations)) + math.Sqrt2*math.Sqrt(math.Log(float64(n.simulations))/float64(v.simulations))
+		temp := (float64(v.wins) / float64(v.simulations)) +
+			math.Sqrt2*math.Sqrt(
+				math.Log(float64(n.simulations))/float64(v.simulations))
 		if temp > max {
 			max = temp
 			next = n.children[i]
@@ -136,19 +140,19 @@ func (m *mctsPlayer) Input() (int, int, error) {
 }
 
 func mctsLoop(m *mctsPlayer) int {
-	c := make(chan struct{})
-	for i := 0; i < 10; {
-		go mctsTick(m, c)
+	timer := time.NewTimer(10 * time.Second)
+	for i := 0; i < 10000; {
 		select {
-		case <-c:
-			i++
-		case <-time.After(30 * time.Second):
+		case <-timer.C:
 			break
+		default:
+		  mctsTick(m)
+		  i++
 		}
 	}
 	max, pos := 0, 0
 	for _, v := range m.r.root.children {
-		if v.wins > max {
+		if v.wins >= max {
 			max = v.wins
 			pos = v.position
 		}
@@ -156,10 +160,9 @@ func mctsLoop(m *mctsPlayer) int {
 	return pos
 }
 
-func mctsTick(m *mctsPlayer, c chan struct{}) {
+func mctsTick(m *mctsPlayer) {
 	n := m.selectNode(m.r.root)
 	n = m.expandNode(n)
 	win := m.simulateNode(n)
 	m.backPropogateNode(n, win)
-	c <- struct{}{}
 }

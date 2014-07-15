@@ -2,6 +2,7 @@ package main
 
 import "fmt"
 import "flag"
+import "runtime"
 
 type player interface {
 	Input() (int, int, error)
@@ -32,15 +33,23 @@ func (b *board) play(p byte, r, c int) error {
 
 func (b *board) checkDone() (bool, byte) {
 	for i := 0; i < 3; i++ {
-		if b.spots[i] == b.spots[i+3] && b.spots[i] == b.spots[i+6] && b.spots[i] != 0 {
+		if b.spots[i] == b.spots[i+3] &&
+			b.spots[i] == b.spots[i+6] &&
+			b.spots[i] != 0 {
 			return true, b.spots[i]
-		} else if b.spots[i*3] == b.spots[i*3+1] && b.spots[i*3] == b.spots[i*3+2] && b.spots[i*3] != 0 {
+		} else if b.spots[i*3] == b.spots[i*3+1] &&
+			b.spots[i*3] == b.spots[i*3+2] &&
+			b.spots[i*3] != 0 {
 			return true, b.spots[i*3]
 		}
 	}
-	if b.spots[0] == b.spots[4] && b.spots[0] == b.spots[8] && b.spots[0] != 0 {
+	if b.spots[0] == b.spots[4] &&
+		b.spots[0] == b.spots[8] &&
+		b.spots[0] != 0 {
 		return true, b.spots[0]
-	} else if b.spots[2] == b.spots[4] && b.spots[2] == b.spots[6] && b.spots[2] != 0 {
+	} else if b.spots[2] == b.spots[4] &&
+		b.spots[2] == b.spots[6] &&
+		b.spots[2] != 0 {
 		return true, b.spots[2]
 	}
 	for i := 0; i < len(b.spots); i++ {
@@ -59,7 +68,7 @@ type game struct {
 }
 
 func (g *game) mainLoop() byte {
-	//g.draw()
+	g.draw()
 	var winner byte = 0
 	for !g.isDone {
 		isDone, char := g.b.checkDone()
@@ -78,7 +87,7 @@ func (g *game) mainLoop() byte {
 		if err := g.tick(); err != nil {
 			panic(err)
 		}
-	//	g.draw()
+		g.draw()
 	}
 	return winner
 }
@@ -96,14 +105,12 @@ func (g *game) tick() error {
 	return nil
 }
 
-/*
 func (g *game) draw() {
 	fmt.Println(g.b.spots[0:3])
 	fmt.Println(g.b.spots[3:6])
 	fmt.Println(g.b.spots[6:9])
 	fmt.Println("Player ", g.turn, "'s turn.")
 }
-*/
 
 type errBadTurn byte
 
@@ -156,6 +163,7 @@ func init() {
 
 func main() {
 	flag.Parse()
+	fmt.Println(runtime.GOMAXPROCS(8))
 	c := make(chan byte)
 
 	for i := 0; i < numGames; i++ {
@@ -180,7 +188,7 @@ func playGame(c chan byte) {
 		b:      &board{},
 		isDone: false,
 	}
-	g.p1 = newRandomPlayer('X', g.b)
+	g.p1 = &humanPlayer{'X'}
 	g.p2 = newMctsPlayer('O', g.b)
 	g.turn = g.p1
 	c <- g.mainLoop()
